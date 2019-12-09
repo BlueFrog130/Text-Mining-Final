@@ -1,0 +1,18 @@
+{
+    "root": true,
+    "env": {
+        "node": true
+    },
+    "rules": {
+        "brace-style": ["warn", "allman"],
+        "quotes": ["warn", "double"],
+        "indent": ["warn", 4],
+        "semi": ["warn", "always"]
+    },
+    "parserOptions": {
+        "parser": "@typescript-eslint/parser",
+        "ecmaFeatures": {
+            "modules": true
+        }
+    }
+}
