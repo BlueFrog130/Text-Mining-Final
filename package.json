@@ -1,15 +1,18 @@
 {
-  "name": "tm",
+  "name": "text-miner",
   "bin": "./dist/main.js",
   "version": "1.0.0",
   "description": "Data mining project in TypeScript",
   "main": "main.js",
   "scripts": {
-    "start": "node -r ts-node/register ./src/main.ts",
+    "start": "node -r ts-node/register ./src/main.ts -d sample -e",
     "dev": "nodemon",
     "build": "tsc",
     "lint": "eslint --ext .ts src/"
   },
+  "files": [
+    "dist/**/*"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {

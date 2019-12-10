@@ -7,6 +7,7 @@ import chalk from "chalk";
 import tm from "text-miner";
 import axios from "axios";
 import glob from "glob";
+import COUNTRIES from "./countries";
 
 // Main caller function
 (async function(){
@@ -15,9 +16,17 @@ import glob from "glob";
      * Accepting in command flags for program operation
      **************************************************/
     program
+        .name(chalk.blueBright("text-miner"))
         .option("-o, --output <dir>", "output directory")
         .option("-u, --url <url>", "URL to pull data from")
-        .option("-d, --directory <dir>", "directory to pull data from");
+        .option("-d, --directory <dir>", "directory to pull data from")
+        .option("--tf-idf", "converts term document matrix to tf-idf matrix")
+        .option("-r, --remove-stopwords", "removes common english stopwords")
+        .option("-p --remove-sparse <percent>", "removes words that appear in less than " + chalk.yellow("<percent>") + " of documents", parseFloat)
+        .option("-w, --remove-words <words>", "removes the coma-seperated list provided")
+        .option("-e, --expand", "expands all contractions")
+        .option("-n, --norm", "normalizes words")
+        .option("-g, --group <option>", "options" + chalk.yellow("h") + "," + chalk.yellow("k"));
 
     program.parse(process.argv);
 
@@ -27,10 +36,9 @@ import glob from "glob";
         process.exit(1);
     }
 
-
     /*******************************************
      * Initializing program input/output files *
-     *******************************************/
+    ********************************************/
 
     /** Output directory */
     let output = path.join(process.cwd(), program.output || "");
@@ -60,7 +68,7 @@ import glob from "glob";
 
     /********************
      * Reading in files *
-     ********************/
+    *********************/
 
     let corpus = new tm.Corpus();
 
@@ -73,7 +81,10 @@ import glob from "glob";
             if(!fs.lstatSync(p).isDirectory())
             {
                 log("    " + path.basename(p));
-                corpus.addDoc(fs.readFileSync(p, "utf8"));
+                let content = fs.readFileSync(p, "utf8");
+                if(program.expand)
+                    tm.expandContractions(content);
+                corpus.addDoc(content);
             }
         }
     }
@@ -86,6 +97,39 @@ import glob from "glob";
         corpus.addDoc(response.data);
     }
 
+    // Removing provided stopwords
+    if(program.removeStopwords)
+    {
+        log(chalk.blue("Removing stopwords..."));
+        corpus.removeWords(tm.STOPWORDS.EN);
+    }
+
+    if(program.norm)
+    {
+        log(chalk.blue("Normalizing country names..."));
+        for(let doc of corpus.documents as { text: string }[])
+        {
+            for(let c of COUNTRIES)
+            {
+                doc.text.replace(c.code, c.name);
+            }
+        }
+    }
+
+    // Normalizing to lowercase
+    log(chalk.blue("Converting to lowercase..."));
+    corpus.toLower();
+
+    // Removing punctuation
+    log(chalk.blue("Removing all punctuation..."));
+    corpus.removeInterpunctuation();
+
+    if(program.removeWords)
+    {
+        log(chalk.blue("Removing words: " + program.removeWords.split(",").join(", ")));
+        corpus.removeWords(program.removeWords.split(","));
+    }
+
     // removing whitespace
     log(chalk.blue("Removing extra whitespace..."));
     corpus.clean();
@@ -94,36 +138,73 @@ import glob from "glob";
     log(chalk.blue("Removing newlines..."));
     corpus.removeNewlines();
 
+    log(chalk.green("Scanning Complete!"));
+
+    /**************************************
+     * Converting data into tables/charts *
+    ***************************************/
+
+    let terms;
     // Creating Term Document Matrix
     log(chalk.blue("Creating Term Document Matrix..."));
-    let terms = new tm.TermDocumentMatrix(corpus);
+    terms = new tm.DocumentTermMatrix(corpus);
 
-    log(chalk.green("Scanning Complete!"));
-    log(`
-    Documents: ${chalk.green(terms.nDocs)}
-    Terms: ${chalk.green(terms.nTerms)}
-    `);
-    log("Starting CLI");
-
-    // CLI Loop
-    log("Enter a command:")
-    process.stdout.write("$ ");
-    process.openStdin().addListener("data", (d) =>
+    if(program.removeSparse)
     {
-        switch(d.toString().trim())
+        log(chalk.blue("Removing sparce elements..."));
+        terms = terms.removeSparseTerms(program.removeSparse);
+    }
+    terms.fill_zeros();
+
+    log(`    Documents: ${chalk.green(terms.nDocs)}\n    Terms: ${chalk.green(terms.nTerms)}`);
+
+    if(program.tfIdf)
+    {
+        terms.weighting(tm.weightTfIdf);
+    }
+
+    // Data holder
+    let csv: string[][] = [];
+
+    let header: string[] = [""];
+    for(let n = 0; n < terms.nDocs; n++)
+    {
+        header.push("Document " + ( n + 1 ))
+    }
+    csv.push(header);
+
+    for(let term = 0, len: number = terms.vocabulary.length; term < len; term++)
+    {
+        let vocab: string[] = terms.vocabulary;
+        let row: string[] = [];
+        row.push(vocab[term]);
+        for(let doc of terms.data as number[])
         {
-            case "h":
-            case "help":
-                log("Help info");
-                break;
-            case "":
-            case "e":
-            case "exit":
-                process.exit(0);
-                break;
-            default:
-                log(chalk.red("Unrecognized input: ") + chalk.yellow(d));
+            row.push(doc[term]);
         }
-        process.stdout.write("$ ");
-    });
+        csv.push(row);
+    }
+    let data = csv.join("\n");
+
+    fs.writeFileSync("tdim.csv", data, "utf8");
+
+    if(program.group)
+    {
+        let vectors: number[] = [];
+        for(let n = 0; n < terms.nDocs; n++)
+        {
+            vectors.push(Math.sqrt(terms.data[n].reduce((acc, cur) => acc + Math.pow(cur, 2))));
+        }
+
+        // skipping header row
+        for(let i = 1, len = csv.length; i < len; i++)
+        {
+            for(let c = 1, cLen = csv[i].length; c < cLen; c++)
+            {
+                csv[i][c] = (parseInt(csv[i][c]) / vectors[c - 1]).toString();
+            }
+        }
+
+        fs.writeFileSync("vectors.csv", csv.join("\n"), "utf8");
+    }
 })();
