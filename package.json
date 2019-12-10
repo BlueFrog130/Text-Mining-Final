@@ -1,7 +1,7 @@
 {
   "name": "text-miner-cli",
   "bin": "./dist/main.js",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Data mining project in TypeScript for class",
   "main": "main.js",
   "scripts": {
@@ -15,8 +15,8 @@
   ],
   "author": "Adam Grady",
   "repository": {
-      "type": "git",
-      "url": "https://github.com/BlueFrog130/Text-Mining-Final"
+    "type": "git",
+    "url": "https://github.com/BlueFrog130/Text-Mining-Final"
   },
   "license": "ISC",
   "devDependencies": {
