@@ -26,7 +26,8 @@ import COUNTRIES from "./countries";
         .option("-w, --remove-words <words>", "removes the coma-seperated list provided")
         .option("-e, --expand", "expands all contractions")
         .option("-n, --norm", "normalizes words")
-        .option("-g, --group <option>", "options" + chalk.yellow("h") + "," + chalk.yellow("k"));
+        .option("-v, --vector", "creates " + chalk.yellow("vector.csv") + " file that represents normalized vectors based on term frequency diagram" )
+        .option("-g, --graph", "outputs " + chalk.yellow("terms.png") + " file in output directory");
 
     program.parse(process.argv);
 
@@ -186,10 +187,11 @@ import COUNTRIES from "./countries";
     }
     let data = csv.join("\n");
 
-    fs.writeFileSync("tdim.csv", data, "utf8");
+    fs.writeFileSync(path.join(output, "tdim.csv"), data, "utf8");
 
-    if(program.group)
+    if(program.vector)
     {
+        log(chalk.blue("Creating vector table..."))
         let vectors: number[] = [];
         for(let n = 0; n < terms.nDocs; n++)
         {
@@ -205,6 +207,28 @@ import COUNTRIES from "./countries";
             }
         }
 
-        fs.writeFileSync("vectors.csv", csv.join("\n"), "utf8");
+        fs.writeFileSync(path.join(output, "vectors.csv"), csv.join("\n"), "utf8");
+    }
+
+    if(program.graph)
+    {
+        log(chalk.blue("Drawing ") + chalk.yellow("terms.png"));
+        let plotly = require("plotly")("BlueFrog", "e7f9bLYDqRIVOIQtpo8f");
+
+        let groupedData = terms.findFreqTerms(1).sort((a, b) => b.count - a.count) as { word: string, count: number }[];
+
+        let d = {
+            x: groupedData.map((v) => v.word),
+            y: groupedData.map((v) => v.count),
+            type: "bar"
+        };
+        plotly.getImage({ "data": [d] }, { format: "png", width: 3840, height: 2160 }, (err, img) =>
+        {
+            if(err)
+                console.error(err);
+
+            let fileStream = fs.createWriteStream("terms.png");
+            img.pipe(fileStream);
+        });
     }
 })();
