@@ -1,8 +1,8 @@
 {
-  "name": "text-miner",
+  "name": "text-miner-cli",
   "bin": "./dist/main.js",
-  "version": "1.0.0",
-  "description": "Data mining project in TypeScript",
+  "version": "0.1.0",
+  "description": "Data mining project in TypeScript for class",
   "main": "main.js",
   "scripts": {
     "start": "node -r ts-node/register ./src/main.ts -d sample -e",
@@ -13,7 +13,11 @@
   "files": [
     "dist/**/*"
   ],
-  "author": "",
+  "author": "Adam Grady",
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/BlueFrog130/Text-Mining-Final"
+  },
   "license": "ISC",
   "devDependencies": {
     "@types/glob": "^7.1.1",
