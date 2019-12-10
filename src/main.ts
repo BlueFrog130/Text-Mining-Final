@@ -229,6 +229,7 @@ import COUNTRIES from "./countries";
 
             let fileStream = fs.createWriteStream("terms.png");
             img.pipe(fileStream);
+            log(chalk.green("Success!"));
         });
     }
 })();
