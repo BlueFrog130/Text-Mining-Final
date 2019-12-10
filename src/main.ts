@@ -22,7 +22,7 @@ import COUNTRIES from "./countries";
         .option("-d, --directory <dir>", "directory to pull data from")
         .option("--tf-idf", "converts term document matrix to tf-idf matrix")
         .option("-r, --remove-stopwords", "removes common english stopwords")
-        .option("-p --remove-sparse <percent>", "removes words that appear in less than " + chalk.yellow("<percent>") + " of documents", parseFloat)
+        .option("-p, --remove-sparse <percent>", "removes words that appear in less than " + chalk.yellow("<percent>") + " of documents", parseFloat)
         .option("-w, --remove-words <words>", "removes the coma-seperated list provided")
         .option("-e, --expand", "expands all contractions")
         .option("-n, --norm", "normalizes words")
